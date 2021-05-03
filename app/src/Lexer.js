@@ -89,7 +89,7 @@ function analyzeWord(word, removeDots)
         return new token(word.toLowerCase(), keywords[word.toLowerCase()]);
     }
 
-    return new token(word, "undefined");
+    return new token(word, "id");
 }
 
 function isKeyword(word)
@@ -109,23 +109,24 @@ function analyzeIntoTokens(word_line)
 {
     var pointer = 0;
     var temp_tokens = [];
-    var undef_type = "id";
+    var force_next_types = "";
 
     while (pointer < word_line.length)
     {
-        var token = analyzeWord(word_line[pointer], undef_type === "id")
+        var token = analyzeWord(word_line[pointer], force_next_types === "")
+
+        if (force_next_types !== "")
+        {
+            token.type = force_next_types;
+        }
 
         if (token.type === "eq")
         {
-            undef_type = "num";
+            force_next_types = "num";
         }
         else if (token.type === "seq")
         {
-            undef_type = "str";
-        }
-        else if (token.type === "undefined")
-        {
-            token.type = undef_type;
+            force_next_types = "str";
         }
 
         temp_tokens.push(token);
