@@ -1,22 +1,27 @@
 <template>
-  <div class="textarea-form">
-    <div style="width:50%; display:inline-block;">
-      <span>Rockstar Input</span>
-      
-      <p style="white-space: pre-line;">Hello: {{ rockstarValue }}</p>
-      <br>
-      <textarea v-model.lazy="rockstarValue" placeholder="Put your Rockstar code here"></textarea>
+  <div>
+
+    <div class="textarea-form">
+      <div style="width:50%; display:inline-block;">
+        <span>Rockstar Input</span>
+        
+        <br>
+        <textarea v-model.lazy="rockstarValue" placeholder="Put your Rockstar code here"></textarea>
+      </div>
+
+      <div style="width:50%; display:inline-block;">
+        <span>Javascript Output</span>
+        
+        <br>
+        <textarea v-model.lazy="jsValue" disabled placeholder="Click on the translate button below to see the results"></textarea>
+      </div>
     </div>
 
-    <div style="width:50%; display:inline-block;">
-      <span>Javascript Output</span>
-      
-      <p style="white-space: pre-line;">{{ jsValue }}</p>
-      <br>
-      <textarea placeholder="Click on the translate button below to see the results"></textarea>
+    <div>
+      <button class="execButton" @click="executeAction(rockstarValue)">Transform</button>
+      <p v-if="errorVal !== undefined" class="errorText">{errorVal}</p>
     </div>
 
-    <button v-on:click="greet">Greet</button>
   </div>
 </template>
 
@@ -26,12 +31,36 @@ export default {
   data() {
     return {
       rockstarValue: "",
-      jsValue: ""
+      jsValue: "",
+      errorVal: undefined
     }
   },
   methods: {
-    greet: function () {
-      alert(this.rockstarValue)
+    executeAction: function(inputText) {
+      if(this.validate(inputText)) {
+        this.jsValue = this.transform(inputText);
+        this.errorVal = undefined;
+      } else {
+        this.jsValue = '';
+        this.errorVal = 'Error occured';
+      }
+    },
+
+    validate: function(inputText) {
+      // Put your validation function here
+
+      console.log('I should validate here based on ' + inputText);
+      return true;
+    },
+
+    transform: function(inputText) {
+      // Put your transformation function here
+
+      let stringArray = inputText.split("");
+      let reversedArray = stringArray.reverse();
+      let outputString = reversedArray.join("");
+
+      return outputString;
     }
   }
 }
@@ -65,5 +94,24 @@ export default {
     color: #fff;
   }
 
+  .execButton {
+    background-color: #000;
+    color: #fff;
+    font-weight: bold;
+    border: 3px solid #fff;
+    font-size: 140%;
+    border-radius: 8px;
+    margin: 8px auto;
+  }
+
+  .execButton:hover {
+    background-color: #600;
+    color: #fff;
+    font-size: 140%;
+  }
+
+  .errorText {
+    color: red;
+  }
   
 </style>
