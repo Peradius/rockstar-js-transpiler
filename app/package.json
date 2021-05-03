@@ -1,7 +1,5 @@
-
-
 {
-  "type" : "module",
+  "type": "module",
   "name": "app",
   "version": "0.1.0",
   "private": true,
@@ -12,6 +10,7 @@
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "run-func": "^1.0.5",
     "vue": "^2.6.11"
   },
   "devDependencies": {

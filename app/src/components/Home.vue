@@ -26,6 +26,8 @@
 </template>
 
 <script>
+import parse from "./../Parser.js";
+
 export default {
   name: 'Home',
   data() {
@@ -38,7 +40,7 @@ export default {
   methods: {
     executeAction: function(inputText) {
       if(this.validate(inputText)) {
-        this.jsValue = this.transform(inputText);
+        this.jsValue = this.translate(inputText);
         this.errorVal = undefined;
       } else {
         this.jsValue = '';
@@ -53,14 +55,8 @@ export default {
       return true;
     },
 
-    transform: function(inputText) {
-      // Put your transformation function here
-
-      let stringArray = inputText.split("");
-      let reversedArray = stringArray.reverse();
-      let outputString = reversedArray.join("");
-
-      return outputString;
+    translate: function(inputText) {
+      return parse(inputText);
     }
   }
 }

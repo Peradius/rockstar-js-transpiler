@@ -15,21 +15,20 @@ const keywords = {
     "times" : "*",
     "of" : "*",
     "over" : "/",
-    "let" : "let",
-    "turn up" : "rnd_u",
-    "turn down" : "rnd_d",
-    "turn around" : "rnd",
-    "turn round" : "rnd",
-    "a" : "id",
-    "an" : "id",
-    "the" : "id",
-    "my" : "id",
-    "your" : "id",
+    "turn" : "en_rnd",
+    "around" : "req_around",
+    "round" : "req_around",
     "it" : "last_id",
-    "\EOF" : "eof",
-    "put" : "enabler_reverse_eq",
-    "into" : "reverse_eq",
-    "shout" : "print"
+    'EOF' : "eof",
+    "put" : "en_reverse_=",
+    "into" : "req_reverse_=",
+    "shout" : "print",
+    "let" : "en_=",
+    "be" : "req_=",
+    "build" : "en_++",
+    "up" : "req_up",
+    "knock" : "en_--",
+    "down" : "req_down"
 };
 
 class token{
@@ -64,28 +63,30 @@ class lexer_analysis_result{
     }
 }
 
-//console.log(Lexer("a cat is seven years old. and bold. and funny\n \nOld Cat says mean things\nit is new and shiny\nput a cat with Old Cat into a basket"))
-
 function splitIntoWords(line)
 {
     return line.trim().split(" ");
 }
 
-function analyzeWord(word)
+function analyzeWord(word, removeDots)
 {
     if (word === "")
     {
         return new token("", "empty_line");
     }
 
+    if (removeDots)
+    {
+        word = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"")
+    }
+    else
+    {
+        word = word.replace(/[,/#!$%^&*;:{}=\-_`~()]/g,"")
+    }
+
     if (isKeyword(word.toLowerCase()))
     {
         return new token(word.toLowerCase(), keywords[word.toLowerCase()]);
-    }
-
-    if (isStartingUpperCase(word))
-    {
-        return new token(word, "id");
     }
 
     return new token(word, "undefined");
@@ -97,10 +98,11 @@ function isKeyword(word)
     return keywords[lc_word] !== undefined;
 }
 
-function isStartingUpperCase(word)
+let nonOperators = ["id", "str", "num", "empty_line"]
+
+function isOperator(type)
 {
-    let char = word[0];
-    return char != char.toLowerCase() && char == char.toUpperCase();
+    return !nonOperators.includes(type);
 }
 
 function analyzeIntoTokens(word_line)
@@ -111,7 +113,7 @@ function analyzeIntoTokens(word_line)
 
     while (pointer < word_line.length)
     {
-        var token = analyzeWord(word_line[pointer])
+        var token = analyzeWord(word_line[pointer], undef_type === "id")
 
         if (token.type === "eq")
         {
@@ -133,15 +135,28 @@ function analyzeIntoTokens(word_line)
     pointer = 0;
     let tokens = [];
     let current_type = "";
+    let enablers = [];
     var tokensToJoin = [];
 
     while (pointer < temp_tokens.length)
     {
-        tokensToJoin.push(temp_tokens[pointer]);
         current_type = temp_tokens[pointer].type;
 
+        if (current_type.includes("en_"))
+        {
+            enablers.push(current_type);
+        }
+
+        if (current_type.includes("req_"))
+        {
+            current_type = getOperatorFromEnReqPair(enablers.pop(), current_type);
+            temp_tokens[pointer].type = current_type;
+        }
+
+        tokensToJoin.push(temp_tokens[pointer]);
+
         if (pointer + 1 >= temp_tokens.length
-            || temp_tokens[pointer + 1].type !== temp_tokens[pointer].type)
+            || temp_tokens[pointer + 1].type !== temp_tokens[pointer].type || isOperator(current_type))
         {
             tokens.push(joinTokens(tokensToJoin, current_type));
             tokensToJoin = [];
@@ -150,7 +165,9 @@ function analyzeIntoTokens(word_line)
         pointer++
     }
 
-    tokens = tokens.filter(t => !t.type.includes("enabler"));
+    tokens = tokens.filter(function (t){
+        return !t.type.includes("en_")
+    });
 
     token_lines.push(tokens);
 }
@@ -245,14 +262,40 @@ function joinTokens(tokens, type)
     }
 }
 
+function getOperatorFromEnReqPair(enabler, current_type)
+{
+    if (enabler === "en_rnd")
+    {
+        switch (current_type)
+        {
+            case "req_around": return "rnd";
+            case "req_up" : return "rndup";
+            case "req_down": return "rnddown";
+        }
+    }
+    if (enabler === "en_++" && current_type === "req_up")
+        return "++"
+    if (enabler === "en_--" && current_type === "req_down")
+        return "--"
+    if (enabler === "en_reverse_=" && current_type === "req_reverse_=")
+        return "reverse_=";
+    if (enabler === "en_=" && current_type === "req_=")
+        return "=";
+
+    return "undefined";
+}
+
 function Lexer(unparsed_code)
 {
     word_lines = [];
     token_lines = [];
+    declared_variables = [];
+    last_used_variable = "";
     var unparsed_lines = unparsed_code.split("\n")
     unparsed_lines.forEach(l => word_lines.push(splitIntoWords(l)));
     word_lines.forEach(analyzeIntoTokens);
     let results = new lexer_analysis_result(token_lines, declared_variables)
+    console.log(results)
     return results;
 }
 

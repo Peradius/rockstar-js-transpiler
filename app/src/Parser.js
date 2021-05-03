@@ -1,6 +1,6 @@
 import Lexer from "./Lexer.js";
 
-var operators = {"+" : 1, "-" : 1, "=" : 10, "*": 5, "/": 5, "reverse_eq": 20, "print" : 1}
+var operators = {"+" : 3, "-" : 3, "--": 3, "++": 3, "=" : 10, "*": 5, "/": 5, "reverse_=": 20, "print" : 1, "rnd" : 2, "rndup": 2, "rnddown": 2}
 var declared_variables = [];
 var trees = [];
 
@@ -39,14 +39,32 @@ class node {
     }
 }
 
-console.log(Parser("a cat is seven years old. and bold. and funny \n \n Old Cat says mean things\nit is new and shiny\nput a cat with Old Cat into a basket\nshout a basket"));
-
-function Parser(unparsed_code)
+function parse(unparsed_code)
 {
+    trees = [];
     let results = Lexer(unparsed_code);
     declared_variables = results.variables;
     results.tokens.forEach(tl => trees.push(treeCreator(tl)));
-    console.log(trees.toString());
+
+    let code_lines = [];
+    trees.forEach(t => code_lines.push(getCode(t)));
+
+    let code = getDeclarationsForVariables();
+    code_lines.forEach(cl => code += cl + '\n');
+
+    console.log(code);
+
+    eval(code);
+
+    return code;
+}
+
+function getDeclarationsForVariables()
+{
+    let dec = "";
+    declared_variables.forEach(v => dec += "var " + v + ";\n");
+    dec += "\n";
+    return dec;
 }
 
 function isOperator(type)
@@ -61,11 +79,11 @@ function treeCreator(tokens)
         return undefined;
     }
 
-    let pointer = 0;
+    let pointer = tokens.length - 1;
     let highIndex = -1;
     let highValue = -1;
 
-    while (pointer < tokens.length)
+    while (pointer >= 0)
     {
         let token = tokens[pointer];
         let tokenValue = -1;
@@ -85,7 +103,7 @@ function treeCreator(tokens)
             highIndex = pointer
         }
 
-        pointer++;
+        pointer--;
     }
 
     let leftTokens;
@@ -95,6 +113,7 @@ function treeCreator(tokens)
     {
         leftTokens = tokens.slice(highIndex + 1);
         rightTokens = tokens.slice(0, highIndex);
+        tokens[highIndex].type = tokens[highIndex].type.replace("reverse_", "");
     }
     else
     {
@@ -114,7 +133,50 @@ function treeCreator(tokens)
 
 function isOperatorReversed(operator)
 {
-    return operator === "reverse_eq";
+    return operator.includes("reverse");
 }
 
+function getCode(node)
+{
+    if (node === undefined)
+    {
+        return "";
+    }
 
+    let type = node.type;
+    let value = node.value;
+    let left = node.left;
+    let right = node.right;
+
+    switch (type) {
+        case "+":
+        case "-":
+        case "*":
+        case "/":
+        case "=":
+            return getCode(left) + " " + type + " " + getCode(right);
+        case "print":
+            return "console.log(" + getCode(right) + ");";
+        case "rnd":
+            return getCode(left) + " = Math.round(" + getCode(left) + ");"
+        case "rndup":
+            return getCode(left) + " = Math.ceil(" + getCode(left) + ");"
+        case "rnddown":
+            return getCode(left) + " = Math.floor(" + getCode(left) + ");"
+        case "str":
+        case "num":
+        case "id":
+            return value;
+        case "++":
+        case "--":
+            if (right !== undefined)
+            {
+                return "(" + getCode(left) + type + ")" + getCode(right)
+            }
+            else return "(" + getCode(left) + type + ")"
+        case "empty_line":
+            return "\n";
+    }
+}
+
+export default parse;
