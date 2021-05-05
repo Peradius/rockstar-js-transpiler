@@ -28,7 +28,9 @@ const keywords = {
     "build" : "en_++",
     "up" : "req_up",
     "knock" : "en_--",
-    "down" : "req_down"
+    "down" : "req_down",
+    "while" : "loop",
+    "until" : "loop"
 };
 
 class token{

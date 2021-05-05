@@ -1,6 +1,8 @@
 import Lexer from "./Lexer.js";
 
-var operators = {"+" : 3, "-" : 3, "--": 3, "++": 3, "=" : 10, "*": 5, "/": 5, "reverse_=": 20, "print" : 1, "rnd" : 2, "rndup": 2, "rnddown": 2}
+const operators = {"+" : 3, "-" : 3, "--": 3, "++": 3, "=" : 10, "*": 5, "/": 5, "reverse_=": 20, "print" : 1, "rnd" : 2, "rndup": 2, "rnddown": 2, "loop": 30}
+const blockInitializers = ['loop', 'if', 'else'];
+
 var declared_variables = [];
 var trees = [];
 
@@ -47,7 +49,24 @@ function parse(unparsed_code)
     results.tokens.forEach(tl => trees.push(treeCreator(tl)));
 
     let code_lines = [];
-    trees.forEach(t => code_lines.push(getCode(t)));
+
+    // Always end each block starting '{' sign with '}' sign
+    let codeBlocks = [];
+    for (let i = 0; i < trees.length; i++) {
+        if(blockInitializers.includes(trees[i].type)) codeBlocks.push(i)
+
+        if(codeBlocks.length > 0 && trees[i].type == 'empty_line') {
+            codeBlocks.pop();
+            code_lines.push('}')
+        }
+        
+        code_lines.push(getCode(trees[i]))
+    }
+
+    let codeBlocksLen = codeBlocks.length;
+    for(let i = 0; i < codeBlocksLen; i++) {
+        code_lines.push('}')
+    }
 
     let code = getDeclarationsForVariables();
     code_lines.forEach(cl => code += cl + '\n');
@@ -147,6 +166,8 @@ function getCode(node)
     let right = node.right;
 
     switch (type) {
+        case "loop":
+            return "while(" + getCode(right) + ") {"
         case "+":
         case "-":
         case "*":
