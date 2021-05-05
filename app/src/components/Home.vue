@@ -48,10 +48,9 @@ export default {
       }
     },
 
-    validate: function(inputText) {
+    validate: function() {
       // Put your validation function here
 
-      console.log('I should validate here based on ' + inputText);
       return true;
     },
 

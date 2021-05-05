@@ -52,9 +52,7 @@ function parse(unparsed_code)
     let code = getDeclarationsForVariables();
     code_lines.forEach(cl => code += cl + '\n');
 
-    console.log(code);
-
-    eval(code);
+    // eval(code);
 
     return code;
 }
@@ -175,7 +173,8 @@ function getCode(node)
             }
             else return "(" + getCode(left) + type + ")"
         case "empty_line":
-            return "\n";
+            // return "\n";
+            return "";
     }
 }
 

@@ -296,7 +296,6 @@ function Lexer(unparsed_code)
     unparsed_lines.forEach(l => word_lines.push(splitIntoWords(l)));
     word_lines.forEach(analyzeIntoTokens);
     let results = new lexer_analysis_result(token_lines, declared_variables)
-    console.log(results)
     return results;
 }
 
