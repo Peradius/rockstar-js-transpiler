@@ -1,7 +1,28 @@
 import Lexer from "./Lexer.js";
 
-const operators = {"+" : 3, "-" : 3, "--": 3, "++": 3, "=" : 10, "*": 5, "/": 5, "reverse_=": 20, "print" : 1, "rnd" : 2, "rndup": 2, "rnddown": 2, "loop": 30}
-const blockInitializers = ['loop', 'if', 'else'];
+const operators = {
+    'function_arg': 1,
+    'return' : 1,
+    "print" : 1,
+    "rnd" : 2,
+    "rndup": 2,
+    "rnddown": 2,
+    ">" : 3,
+    "<" : 3,
+    ">=" : 3,
+    "<=" : 3,
+    "+" : 4,
+    "-" : 4,
+    "--": 4,
+    "++": 4,
+    "*": 5,
+    "/": 5,
+    "=" : 10,
+    "reverse_=": 20,
+    "loop": 30,
+    'function': 30
+}
+const blockInitializers = ['loop', 'function', 'if', 'else'];
 
 var declared_variables = [];
 var trees = [];
@@ -168,14 +189,28 @@ function getCode(node)
     switch (type) {
         case "loop":
             return "while(" + getCode(right) + ") {"
+        case "function":
+            return "function " + getCode(left) + "(" + getCode(right) + ") {";
+        case "function_arg":
+            var result = '';
+            if (left !== undefined) result += getCode(left) + ","
+            if (right !== undefined) result += getCode(right)
+
+            return result
         case "+":
         case "-":
         case "*":
         case "/":
         case "=":
+        case ">":
+        case "<":
+        case ">=":
+        case "<=":
             return getCode(left) + " " + type + " " + getCode(right);
         case "print":
             return "console.log(" + getCode(right) + ");";
+        case "return":
+            return "return " + getCode(right);
         case "rnd":
             return getCode(left) + " = Math.round(" + getCode(left) + ");"
         case "rndup":

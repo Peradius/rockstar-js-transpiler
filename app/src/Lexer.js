@@ -8,6 +8,7 @@ const keywords = {
     "was" : "eq",
     "were" : "eq",
     "says" : "seq",
+
     "plus" : "+",
     "with" : "+",
     "minus" : "-",
@@ -15,23 +16,80 @@ const keywords = {
     "times" : "*",
     "of" : "*",
     "over" : "/",
+
     "turn" : "en_rnd",
     "around" : "req_around",
     "round" : "req_around",
+
     "it" : "last_id",
+    "he" : "last_id",
+    "she" : "last_id",
+    "him" : "last_id",
+    "her" : "last_id",
+    "they" : "last_id",
+    "them" : "last_id",
+    "ze" : "last_id",
+    "hir" : "last_id",
+    "zie" : "last_id",
+    "zir" : "last_id",
+    "xe" : "last_id",
+    "xem" : "last_id",
+    "ve" : "last_id",
+    "ver" : "last_id",
+    
     'EOF' : "eof",
     "put" : "en_reverse_=",
     "into" : "req_reverse_=",
+
     "shout" : "print",
+    "whisper" : "print",
+    "scream" : "print",
+
     "let" : "en_=",
     "be" : "req_=",
     "build" : "en_++",
     "up" : "req_up",
     "knock" : "en_--",
     "down" : "req_down",
+
     "while" : "loop",
-    "until" : "loop"
+    "until" : "loop",
+
+    "takes" : "function",
+    "and" : "function_arg",
+
+    // Special keywords (see below)
+    "special_give_back" : "return",
+
+    "special_greater_than" : ">",
+    "special_lesser_than" : "<",
+    "special_greater_equal_than" : ">=",
+    "special_lesser_equal_than" : "<="
 };
+
+const specialKeywords = {
+    "Give back" : "special_give_back",
+
+    "is higher than" : "special_greater_than",
+    "is greater than" : "special_greater_than",
+    "is bigger than" : "special_greater_than",
+    "is stronger than" : "special_greater_than",
+
+    "is lower than" : "special_lesser_than",
+    "is lesser than" : "special_lesser_than",
+    "is smaller than" : "special_lesser_than",
+    "is weaker than" : "special_lesser_than",
+
+    "is as high as" : "special_greater_equal_than",
+    "is as great as" : "special_greater_equal_than",
+    "is as big as" : "special_greater_equal_than",
+    "is as strong as" : "special_greater_equal_than",
+
+    "is as low as": "special_lesser_equal_than",
+    "is as little as": "special_lesser_equal_than",
+    "is as small as": "special_lesser_equal_than",
+    "is as weak as": "special_lesser_equal_than"
+}
 
 class token{
     type;
@@ -67,6 +125,16 @@ class lexer_analysis_result{
 
 function splitIntoWords(line)
 {
+    // Before splitting up the words with blank space
+    // clear the junk and take care of special keywords 
+    // such as 'Give back' which contain a blank space 
+    // but should be treated as a single word
+
+    Object.keys(specialKeywords).forEach(key => {
+        line = line.replace(/[,/#!$%^&*;:{}=\-`~()]/g, "")
+        line = line.replaceAll(`${key}`, specialKeywords[key])
+    })
+
     return line.trim().split(" ");
 }
 
@@ -79,11 +147,7 @@ function analyzeWord(word, removeDots)
 
     if (removeDots)
     {
-        word = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"")
-    }
-    else
-    {
-        word = word.replace(/[,/#!$%^&*;:{}=\-_`~()]/g,"")
+        word = word.replace(/[.]/g,"")
     }
 
     if (isKeyword(word.toLowerCase()))
@@ -294,11 +358,12 @@ function Lexer(unparsed_code)
     token_lines = [];
     declared_variables = [];
     last_used_variable = "";
+
     var unparsed_lines = unparsed_code.split("\n")
     unparsed_lines.forEach(l => word_lines.push(splitIntoWords(l)));
     word_lines.forEach(analyzeIntoTokens);
-    let results = new lexer_analysis_result(token_lines, declared_variables)
-    return results;
+    
+    return new lexer_analysis_result(token_lines, declared_variables);
 }
 
 export default Lexer;
