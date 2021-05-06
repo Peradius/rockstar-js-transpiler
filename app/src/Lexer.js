@@ -50,7 +50,10 @@ const keywords = {
     "down" : "req_down",
 
     "while" : "loop",
-    "until" : "loop"
+    "until" : "loop",
+
+    "takes" : "function",
+    "and" : "function_arg"
 };
 
 class token{
