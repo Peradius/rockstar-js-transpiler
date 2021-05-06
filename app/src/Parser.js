@@ -202,9 +202,15 @@ function getCode(node)
         case "*":
         case "/":
         case "=":
+        case ">":
+        case "<":
+        case ">=":
+        case "<=":
             return getCode(left) + " " + type + " " + getCode(right);
         case "print":
             return "console.log(" + getCode(right) + ");";
+        case "return":
+            return "return " + getCode(right);
         case "rnd":
             return getCode(left) + " = Math.round(" + getCode(left) + ");"
         case "rndup":

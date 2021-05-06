@@ -40,7 +40,10 @@ const keywords = {
     'EOF' : "eof",
     "put" : "en_reverse_=",
     "into" : "req_reverse_=",
+
     "shout" : "print",
+    "whisper" : "print",
+    "scream" : "print",
 
     "let" : "en_=",
     "be" : "req_=",
@@ -53,8 +56,40 @@ const keywords = {
     "until" : "loop",
 
     "takes" : "function",
-    "and" : "function_arg"
+    "and" : "function_arg",
+
+    // Special keywords (see below)
+    "special_give_back" : "return",
+
+    "special_greater_than" : ">",
+    "special_lesser_than" : "<",
+    "special_greater_equal_than" : ">=",
+    "special_lesser_equal_than" : "<="
 };
+
+const specialKeywords = {
+    "Give back" : "special_give_back",
+
+    "is higher than" : "special_greater_than",
+    "is greater than" : "special_greater_than",
+    "is bigger than" : "special_greater_than",
+    "is stronger than" : "special_greater_than",
+
+    "is lower than" : "special_lesser_than",
+    "is lesser than" : "special_lesser_than",
+    "is smaller than" : "special_lesser_than",
+    "is weaker than" : "special_lesser_than",
+
+    "is as high as" : "special_greater_equal_than",
+    "is as great as" : "special_greater_equal_than",
+    "is as big as" : "special_greater_equal_than",
+    "is as strong as" : "special_greater_equal_than",
+
+    "is as low as": "special_lesser_equal_than",
+    "is as little as": "special_lesser_equal_than",
+    "is as small as": "special_lesser_equal_than",
+    "is as weak as": "special_lesser_equal_than"
+}
 
 class token{
     type;
@@ -90,6 +125,16 @@ class lexer_analysis_result{
 
 function splitIntoWords(line)
 {
+    // Before splitting up the words with blank space
+    // clear the junk and take care of special keywords 
+    // such as 'Give back' which contain a blank space 
+    // but should be treated as a single word
+
+    Object.keys(specialKeywords).forEach(key => {
+        line = line.replace(/[,/#!$%^&*;:{}=\-`~()]/g, "")
+        line = line.replaceAll(`${key}`, specialKeywords[key])
+    })
+
     return line.trim().split(" ");
 }
 
@@ -102,11 +147,7 @@ function analyzeWord(word, removeDots)
 
     if (removeDots)
     {
-        word = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"")
-    }
-    else
-    {
-        word = word.replace(/[,/#!$%^&*;:{}=\-_`~()]/g,"")
+        word = word.replace(/[.]/g,"")
     }
 
     if (isKeyword(word.toLowerCase()))
