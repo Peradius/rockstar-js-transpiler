@@ -8,6 +8,7 @@ const keywords = {
     "was" : "eq",
     "were" : "eq",
     "says" : "seq",
+
     "plus" : "+",
     "with" : "+",
     "minus" : "-",
@@ -15,20 +16,39 @@ const keywords = {
     "times" : "*",
     "of" : "*",
     "over" : "/",
+
     "turn" : "en_rnd",
     "around" : "req_around",
     "round" : "req_around",
+
     "it" : "last_id",
+    "he" : "last_id",
+    "she" : "last_id",
+    "him" : "last_id",
+    "her" : "last_id",
+    "they" : "last_id",
+    "them" : "last_id",
+    "ze" : "last_id",
+    "hir" : "last_id",
+    "zie" : "last_id",
+    "zir" : "last_id",
+    "xe" : "last_id",
+    "xem" : "last_id",
+    "ve" : "last_id",
+    "ver" : "last_id",
+    
     'EOF' : "eof",
     "put" : "en_reverse_=",
     "into" : "req_reverse_=",
     "shout" : "print",
+
     "let" : "en_=",
     "be" : "req_=",
     "build" : "en_++",
     "up" : "req_up",
     "knock" : "en_--",
     "down" : "req_down",
+
     "while" : "loop",
     "until" : "loop"
 };
