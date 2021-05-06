@@ -1,6 +1,27 @@
 import Lexer from "./Lexer.js";
 
-const operators = {"+" : 3, "-" : 3, "--": 3, "++": 3, "=" : 10, "*": 5, "/": 5, "reverse_=": 20, "print" : 1, "rnd" : 2, "rndup": 2, "rnddown": 2, "loop": 30, 'function': 30, 'function_arg': 1}
+const operators = {
+    'function_arg': 1,
+    'return' : 1,
+    "print" : 1,
+    "rnd" : 2,
+    "rndup": 2,
+    "rnddown": 2,
+    ">" : 3,
+    "<" : 3,
+    ">=" : 3,
+    "<=" : 3,
+    "+" : 4,
+    "-" : 4,
+    "--": 4,
+    "++": 4,
+    "*": 5,
+    "/": 5,
+    "=" : 10,
+    "reverse_=": 20,
+    "loop": 30,
+    'function': 30
+}
 const blockInitializers = ['loop', 'function', 'if', 'else'];
 
 var declared_variables = [];
@@ -169,7 +190,6 @@ function getCode(node)
         case "loop":
             return "while(" + getCode(right) + ") {"
         case "function":
-            console.log('Node: ' + node)
             return "function " + getCode(left) + "(" + getCode(right) + ") {";
         case "function_arg":
             var result = '';

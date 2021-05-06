@@ -317,11 +317,12 @@ function Lexer(unparsed_code)
     token_lines = [];
     declared_variables = [];
     last_used_variable = "";
+
     var unparsed_lines = unparsed_code.split("\n")
     unparsed_lines.forEach(l => word_lines.push(splitIntoWords(l)));
     word_lines.forEach(analyzeIntoTokens);
-    let results = new lexer_analysis_result(token_lines, declared_variables)
-    return results;
+    
+    return new lexer_analysis_result(token_lines, declared_variables);
 }
 
 export default Lexer;
