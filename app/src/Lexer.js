@@ -1,9 +1,4 @@
-var word_lines = [];
-var token_lines = [];
-var declared_variables = [];
-var last_used_variable;
-
-const keywords = {
+const KEYWORDS = {
     "is" : "eq",
     "was" : "eq",
     "were" : "eq",
@@ -37,13 +32,14 @@ const keywords = {
     "ve" : "last_id",
     "ver" : "last_id",
     
-    'EOF' : "eof",
+    "EOF" : "eof",
     "put" : "en_reverse_=",
     "into" : "req_reverse_=",
 
     "shout" : "print",
     "whisper" : "print",
     "scream" : "print",
+    "say": "print",
 
     "let" : "en_=",
     "be" : "req_=",
@@ -55,11 +51,35 @@ const keywords = {
     "while" : "loop",
     "until" : "loop",
 
-    "takes" : "function",
-    "and" : "function_arg",
+    "if" : "cond_if",
+    "else" : "cond_else",
+
+    "mysterious" : "undefined",
+    "null" : "null",
+    "nothing" : "null",
+    "nowhere" : "null",
+    "nobody" : "null",
+    "empty" : "null",
+    "gone" : "null",
+    
+    "true" : "bool_true",
+    "right" : "bool_true",
+    "yes" : "bool_true",
+    "ok" : "bool_true",
+    
+    "false" : "bool_false",
+    "wrong" : "bool_false",
+    "no" : "bool_false",
+    "lies" : "bool_false",
+
+    "takes" : "function_init", // Creates a function
+    "taking" : "function_exec", // Calls a function
+    "and" : "function_arg_sep", // Separator between various function arguments
 
     // Special keywords (see below)
     "special_give_back" : "return",
+    "special_break_it_down" : "break",
+    "special_take_it_to_the_top" : "continue",
 
     "special_greater_than" : ">",
     "special_lesser_than" : "<",
@@ -67,8 +87,10 @@ const keywords = {
     "special_lesser_equal_than" : "<="
 };
 
-const specialKeywords = {
+const SPECIAL_KEYWORDS = {
     "Give back" : "special_give_back",
+    "Break it down": "special_break_it_down",
+    "Take it to the top" : "special_take_it_to_the_top",
 
     "is higher than" : "special_greater_than",
     "is greater than" : "special_greater_than",
@@ -90,6 +112,13 @@ const specialKeywords = {
     "is as small as": "special_lesser_equal_than",
     "is as weak as": "special_lesser_equal_than"
 }
+
+const NON_OPERATORS = ["id", "str", "num", "bool_true", "bool_false", "null", "undefined", "empty_line"]
+
+var word_lines = [];
+var token_lines = [];
+var declared_variables = [];
+var last_used_variable;
 
 class token{
     type;
@@ -127,12 +156,12 @@ function splitIntoWords(line)
 {
     // Before splitting up the words with blank space
     // clear the junk and take care of special keywords 
-    // such as 'Give back' which contain a blank space 
+    // such as "Give back" which contain a blank space 
     // but should be treated as a single word
 
-    Object.keys(specialKeywords).forEach(key => {
-        line = line.replace(/[,/#!$%^&*;:{}=\-`~()]/g, "")
-        line = line.replaceAll(`${key}`, specialKeywords[key])
+    Object.keys(SPECIAL_KEYWORDS).forEach(key => {
+        line = line.replace(/[,/#$%^&*;:{}=\-`~()]/g, "")
+        line = line.replaceAll(`${key}`, SPECIAL_KEYWORDS[key])
     })
 
     return line.trim().split(" ");
@@ -152,7 +181,7 @@ function analyzeWord(word, removeDots)
 
     if (isKeyword(word.toLowerCase()))
     {
-        return new token(word.toLowerCase(), keywords[word.toLowerCase()]);
+        return new token(word.toLowerCase(), KEYWORDS[word.toLowerCase()]);
     }
 
     return new token(word, "id");
@@ -161,38 +190,49 @@ function analyzeWord(word, removeDots)
 function isKeyword(word)
 {
     let lc_word = word.toLowerCase();
-    return keywords[lc_word] !== undefined;
+    return KEYWORDS[lc_word] !== undefined;
 }
-
-let nonOperators = ["id", "str", "num", "empty_line"]
 
 function isOperator(type)
 {
-    return !nonOperators.includes(type);
+    return !NON_OPERATORS.includes(type);
 }
 
 function analyzeIntoTokens(word_line)
 {
     var pointer = 0;
     var temp_tokens = [];
-    var force_next_types = "";
+    var force_next_types = [];
 
     while (pointer < word_line.length)
     {
-        var token = analyzeWord(word_line[pointer], force_next_types === "")
+        var token = analyzeWord(word_line[pointer], force_next_types.length == 0)
 
-        if (force_next_types !== "")
+        if (force_next_types.length > 0)
         {
-            token.type = force_next_types;
+            // This situation happen when 'eq' should expect either numeric or boolean/null value
+            // example:
+            // Expression is amazing    => var Expression = 7
+            // Expression is ok         => var Expression = true  //(not var Expression = 2)
+            let type = token.type;
+            if(type === "null") token.type = force_next_types[1];
+            else if(type === "undefined") token.type = force_next_types[2];
+            else if(type === "bool_true") token.type = force_next_types[3];
+            else if(type === "bool_false") token.type = force_next_types[4];
+            else token.type = force_next_types[0];
         }
 
         if (token.type === "eq")
         {
-            force_next_types = "num";
+            force_next_types.push("num");
+            force_next_types.push("null");
+            force_next_types.push("undefined");
+            force_next_types.push("bool_true");
+            force_next_types.push("bool_false");
         }
         else if (token.type === "seq")
         {
-            force_next_types = "str";
+            force_next_types.push("str");
         }
 
         temp_tokens.push(token);
@@ -241,6 +281,32 @@ function analyzeIntoTokens(word_line)
 
 function joinTokens(tokens, type)
 {
+    if (type == "eq" || type == "seq")
+    {
+        return new token(tokens[0].value, "=")
+    }
+
+    if (type == "last_id")
+    {
+        return new token(last_used_variable, "id")
+    }
+    if (type == "id")
+    {
+        return joinIds(tokens);
+    }
+    else if (type == "num")
+    {
+        return joinNumbers(tokens);
+    }
+    else if (type == "str")
+    {
+        return joinStrings(tokens);
+    }
+    else
+    {
+        return tokens[0];
+    }
+
     function joinIds(tokens)
     {
         var idName = "";
@@ -300,32 +366,6 @@ function joinTokens(tokens, type)
         var num = int + dec;
 
         return new token(num, "num");
-    }
-
-    if (type == "eq" || type == "seq")
-    {
-        return new token(tokens[0].value, "=")
-    }
-
-    if (type == "last_id")
-    {
-        return new token(last_used_variable, "id")
-    }
-    if (type == "id")
-    {
-        return joinIds(tokens);
-    }
-    else if (type == "num")
-    {
-        return joinNumbers(tokens);
-    }
-    else if (type == "str")
-    {
-        return joinStrings(tokens);
-    }
-    else
-    {
-        return tokens[0];
     }
 }
 

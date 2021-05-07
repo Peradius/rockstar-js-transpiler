@@ -1,9 +1,15 @@
 import Lexer from "./Lexer.js";
 
-const operators = {
-    'function_arg': 1,
-    'return' : 1,
+const OPERATORS = {
+    "function_arg_sep": 1,
+    "return" : 1,
     "print" : 1,
+    "break" : 1,
+    "continue" : 1,
+    "undefined" : 1,
+    "null" : 1,
+    "bool_true" : 1,
+    "bool_false" : 1,
     "rnd" : 2,
     "rndup": 2,
     "rnddown": 2,
@@ -20,9 +26,13 @@ const operators = {
     "=" : 10,
     "reverse_=": 20,
     "loop": 30,
-    'function': 30
+    "function_init": 30,
+    "function_exec": 30,
+    "cond_if" : 35,
+    "cond_else" : 35
 }
-const blockInitializers = ['loop', 'function', 'if', 'else'];
+
+const BLOCK_INITALIZERS = ["loop", "function_init", "function_exec", "cond_if", "cond_else"];
 
 var declared_variables = [];
 var trees = [];
@@ -74,9 +84,9 @@ function parse(unparsed_code)
     // Always end each block starting '{' sign with '}' sign
     let codeBlocks = [];
     for (let i = 0; i < trees.length; i++) {
-        if(blockInitializers.includes(trees[i].type)) codeBlocks.push(i)
+        if(BLOCK_INITALIZERS.includes(trees[i].type)) codeBlocks.push(i)
 
-        if(codeBlocks.length > 0 && trees[i].type == 'empty_line') {
+        if(codeBlocks.length > 0 && trees[i].type == "empty_line") {
             codeBlocks.pop();
             code_lines.push('}')
         }
@@ -107,7 +117,7 @@ function getDeclarationsForVariables()
 
 function isOperator(type)
 {
-    return operators[type] !== undefined;
+    return OPERATORS[type] !== undefined;
 }
 
 function treeCreator(tokens)
@@ -128,7 +138,7 @@ function treeCreator(tokens)
 
         if (isOperator(token.type))
         {
-            tokenValue = operators[token.type];
+            tokenValue = OPERATORS[token.type];
         }
         else
         {
@@ -187,16 +197,56 @@ function getCode(node)
     let right = node.right;
 
     switch (type) {
-        case "loop":
+        case "loop": {
             return "while(" + getCode(right) + ") {"
-        case "function":
+        }
+        case "break": {
+            return "break;"
+        }
+        case "continue": {
+            return "continue;"
+        }
+        case "undefined": {
+            return "undefined;"
+        }
+        case "null": {
+            return "null;"
+        }
+        case "bool_true": {
+            return "true;"
+        }
+        case "bool_false": {
+            return "false;"
+        }
+        case "function_init": {
             return "function " + getCode(left) + "(" + getCode(right) + ") {";
-        case "function_arg":
-            var result = '';
+        }
+        case "function_arg_sep": {
+            let result = "";
             if (left !== undefined) result += getCode(left) + ","
             if (right !== undefined) result += getCode(right)
 
             return result
+        }
+        case "function_exec": {
+            let result = "";
+            if (left !== undefined) result += "this." + getCode(left) + "("
+            if (right !== undefined) result += getCode(right) + ") {"
+            result + ")"
+            return result;
+        }
+        case "cond_if": {
+            let result = "if(";
+            if(right !== undefined) result += getCode(right);
+            result = result.replaceAll(" {", "");
+            result += ") {"
+            return result;
+        }
+        case "cond_else": {
+            let result = "else {";
+            if(right !== undefined) result += getCode(right);
+            return result;
+        }
         case "+":
         case "-":
         case "*":
@@ -205,32 +255,41 @@ function getCode(node)
         case ">":
         case "<":
         case ">=":
-        case "<=":
+        case "<=": {
             return getCode(left) + " " + type + " " + getCode(right);
-        case "print":
+        }
+        case "print": {
             return "console.log(" + getCode(right) + ");";
-        case "return":
-            return "return " + getCode(right);
-        case "rnd":
+        }
+        case "return": {
+            return "return " + getCode(right) + ";";
+        }
+        case "rnd": {
             return getCode(left) + " = Math.round(" + getCode(left) + ");"
-        case "rndup":
+        }
+        case "rndup": {
             return getCode(left) + " = Math.ceil(" + getCode(left) + ");"
-        case "rnddown":
+        }
+        case "rnddown": {
             return getCode(left) + " = Math.floor(" + getCode(left) + ");"
+        }
         case "str":
         case "num":
-        case "id":
+        case "id": {
             return value;
+        }
         case "++":
-        case "--":
+        case "--": {
             if (right !== undefined)
             {
                 return "(" + getCode(left) + type + ")" + getCode(right)
             }
             else return "(" + getCode(left) + type + ")"
-        case "empty_line":
+        }
+        case "empty_line": {
             // return "\n";
             return "";
+        }
     }
 }
 
