@@ -44,6 +44,7 @@ const keywords = {
     "shout" : "print",
     "whisper" : "print",
     "scream" : "print",
+    "say": "print",
 
     "let" : "en_=",
     "be" : "req_=",
@@ -135,7 +136,7 @@ function splitIntoWords(line)
     // but should be treated as a single word
 
     Object.keys(specialKeywords).forEach(key => {
-        line = line.replace(/[,/#!$%^&*;:{}=\-`~()]/g, "")
+        line = line.replace(/[,/#$%^&*;:{}=\-`~()]/g, "")
         line = line.replaceAll(`${key}`, specialKeywords[key])
     })
 
