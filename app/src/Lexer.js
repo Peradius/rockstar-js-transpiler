@@ -1,9 +1,4 @@
-var word_lines = [];
-var token_lines = [];
-var declared_variables = [];
-var last_used_variable;
-
-const keywords = {
+const KEYWORDS = {
     "is" : "eq",
     "was" : "eq",
     "were" : "eq",
@@ -37,7 +32,7 @@ const keywords = {
     "ve" : "last_id",
     "ver" : "last_id",
     
-    'EOF' : "eof",
+    "EOF" : "eof",
     "put" : "en_reverse_=",
     "into" : "req_reverse_=",
 
@@ -56,8 +51,12 @@ const keywords = {
     "while" : "loop",
     "until" : "loop",
 
-    "takes" : "function",
-    "and" : "function_arg",
+    "if" : "cond_if",
+    "else" : "cond_else",
+
+    "takes" : "function_init", // Creates a function
+    "taking" : "function_exec", // Calls a function
+    "and" : "function_arg_sep", // Separator between various function arguments
 
     // Special keywords (see below)
     "special_give_back" : "return",
@@ -70,7 +69,7 @@ const keywords = {
     "special_lesser_equal_than" : "<="
 };
 
-const specialKeywords = {
+const SPECIAL_KEYWORDS = {
     "Give back" : "special_give_back",
     "Break it down": "special_break_it_down",
     "Take it to the top" : "special_take_it_to_the_top",
@@ -95,6 +94,11 @@ const specialKeywords = {
     "is as small as": "special_lesser_equal_than",
     "is as weak as": "special_lesser_equal_than"
 }
+
+var word_lines = [];
+var token_lines = [];
+var declared_variables = [];
+var last_used_variable;
 
 class token{
     type;
@@ -132,12 +136,12 @@ function splitIntoWords(line)
 {
     // Before splitting up the words with blank space
     // clear the junk and take care of special keywords 
-    // such as 'Give back' which contain a blank space 
+    // such as "Give back" which contain a blank space 
     // but should be treated as a single word
 
-    Object.keys(specialKeywords).forEach(key => {
+    Object.keys(SPECIAL_KEYWORDS).forEach(key => {
         line = line.replace(/[,/#$%^&*;:{}=\-`~()]/g, "")
-        line = line.replaceAll(`${key}`, specialKeywords[key])
+        line = line.replaceAll(`${key}`, SPECIAL_KEYWORDS[key])
     })
 
     return line.trim().split(" ");
@@ -157,7 +161,7 @@ function analyzeWord(word, removeDots)
 
     if (isKeyword(word.toLowerCase()))
     {
-        return new token(word.toLowerCase(), keywords[word.toLowerCase()]);
+        return new token(word.toLowerCase(), KEYWORDS[word.toLowerCase()]);
     }
 
     return new token(word, "id");
@@ -166,7 +170,7 @@ function analyzeWord(word, removeDots)
 function isKeyword(word)
 {
     let lc_word = word.toLowerCase();
-    return keywords[lc_word] !== undefined;
+    return KEYWORDS[lc_word] !== undefined;
 }
 
 let nonOperators = ["id", "str", "num", "empty_line"]
