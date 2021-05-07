@@ -1,9 +1,11 @@
 import Lexer from "./Lexer.js";
 
 const operators = {
-    'function_arg': 1,
-    'return' : 1,
+    "function_arg": 1,
+    "return" : 1,
     "print" : 1,
+    "break" : 1,
+    "continue" : 1,
     "rnd" : 2,
     "rndup": 2,
     "rnddown": 2,
@@ -20,7 +22,7 @@ const operators = {
     "=" : 10,
     "reverse_=": 20,
     "loop": 30,
-    'function': 30
+    "function": 30
 }
 const blockInitializers = ['loop', 'function', 'if', 'else'];
 
@@ -189,6 +191,10 @@ function getCode(node)
     switch (type) {
         case "loop":
             return "while(" + getCode(right) + ") {"
+        case "break":
+            return "break;"
+        case "continue":
+            return "continue;"
         case "function":
             return "function " + getCode(left) + "(" + getCode(right) + ") {";
         case "function_arg":

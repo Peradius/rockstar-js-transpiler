@@ -60,6 +60,8 @@ const keywords = {
 
     // Special keywords (see below)
     "special_give_back" : "return",
+    "special_break_it_down" : "break",
+    "special_take_it_to_the_top" : "continue",
 
     "special_greater_than" : ">",
     "special_lesser_than" : "<",
@@ -69,6 +71,8 @@ const keywords = {
 
 const specialKeywords = {
     "Give back" : "special_give_back",
+    "Break it down": "special_break_it_down",
+    "Take it to the top" : "special_take_it_to_the_top",
 
     "is higher than" : "special_greater_than",
     "is greater than" : "special_greater_than",
