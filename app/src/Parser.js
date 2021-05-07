@@ -6,6 +6,10 @@ const OPERATORS = {
     "print" : 1,
     "break" : 1,
     "continue" : 1,
+    "undefined" : 1,
+    "null" : 1,
+    "bool_true" : 1,
+    "bool_false" : 1,
     "rnd" : 2,
     "rndup": 2,
     "rnddown": 2,
@@ -201,6 +205,18 @@ function getCode(node)
         }
         case "continue": {
             return "continue;"
+        }
+        case "undefined": {
+            return "undefined;"
+        }
+        case "null": {
+            return "null;"
+        }
+        case "bool_true": {
+            return "true;"
+        }
+        case "bool_false": {
+            return "false;"
         }
         case "function_init": {
             return "function " + getCode(left) + "(" + getCode(right) + ") {";

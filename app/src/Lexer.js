@@ -54,6 +54,24 @@ const KEYWORDS = {
     "if" : "cond_if",
     "else" : "cond_else",
 
+    "mysterious" : "undefined",
+    "null" : "null",
+    "nothing" : "null",
+    "nowhere" : "null",
+    "nobody" : "null",
+    "empty" : "null",
+    "gone" : "null",
+    
+    "true" : "bool_true",
+    "right" : "bool_true",
+    "yes" : "bool_true",
+    "ok" : "bool_true",
+    
+    "false" : "bool_false",
+    "wrong" : "bool_false",
+    "no" : "bool_false",
+    "lies" : "bool_false",
+
     "takes" : "function_init", // Creates a function
     "taking" : "function_exec", // Calls a function
     "and" : "function_arg_sep", // Separator between various function arguments
@@ -94,6 +112,8 @@ const SPECIAL_KEYWORDS = {
     "is as small as": "special_lesser_equal_than",
     "is as weak as": "special_lesser_equal_than"
 }
+
+const NON_OPERATORS = ["id", "str", "num", "bool_true", "bool_false", "null", "undefined", "empty_line"]
 
 var word_lines = [];
 var token_lines = [];
@@ -173,35 +193,48 @@ function isKeyword(word)
     return KEYWORDS[lc_word] !== undefined;
 }
 
-let nonOperators = ["id", "str", "num", "empty_line"]
-
 function isOperator(type)
 {
-    return !nonOperators.includes(type);
+    return !NON_OPERATORS.includes(type);
 }
 
 function analyzeIntoTokens(word_line)
 {
     var pointer = 0;
     var temp_tokens = [];
-    var force_next_types = "";
+    var force_next_types = [];
 
     while (pointer < word_line.length)
     {
-        var token = analyzeWord(word_line[pointer], force_next_types === "")
+        var token = analyzeWord(word_line[pointer], force_next_types.length == 0)
+        console.log(pointer + " : " + token)
+        console.log(force_next_types)
 
-        if (force_next_types !== "")
+        if (force_next_types.length > 0)
         {
-            token.type = force_next_types;
+            // This situation happen when 'eq' should expect either numeric or boolean/null value
+            // example:
+            // Expression is amazing    => var Expression = 7
+            // Expression is ok         => var Expression = true  //(not var Expression = 2)
+            let type = token.type;
+            if(type === "null") token.type = force_next_types[1];
+            else if(type === "undefined") token.type = force_next_types[2];
+            else if(type === "bool_true") token.type = force_next_types[3];
+            else if(type === "bool_false") token.type = force_next_types[4];
+            else token.type = force_next_types[0];
         }
 
         if (token.type === "eq")
         {
-            force_next_types = "num";
+            force_next_types.push("num");
+            force_next_types.push("null");
+            force_next_types.push("undefined");
+            force_next_types.push("bool_true");
+            force_next_types.push("bool_false");
         }
         else if (token.type === "seq")
         {
-            force_next_types = "str";
+            force_next_types.push("str");
         }
 
         temp_tokens.push(token);
@@ -250,6 +283,32 @@ function analyzeIntoTokens(word_line)
 
 function joinTokens(tokens, type)
 {
+    if (type == "eq" || type == "seq")
+    {
+        return new token(tokens[0].value, "=")
+    }
+
+    if (type == "last_id")
+    {
+        return new token(last_used_variable, "id")
+    }
+    if (type == "id")
+    {
+        return joinIds(tokens);
+    }
+    else if (type == "num")
+    {
+        return joinNumbers(tokens);
+    }
+    else if (type == "str")
+    {
+        return joinStrings(tokens);
+    }
+    else
+    {
+        return tokens[0];
+    }
+
     function joinIds(tokens)
     {
         var idName = "";
@@ -309,32 +368,6 @@ function joinTokens(tokens, type)
         var num = int + dec;
 
         return new token(num, "num");
-    }
-
-    if (type == "eq" || type == "seq")
-    {
-        return new token(tokens[0].value, "=")
-    }
-
-    if (type == "last_id")
-    {
-        return new token(last_used_variable, "id")
-    }
-    if (type == "id")
-    {
-        return joinIds(tokens);
-    }
-    else if (type == "num")
-    {
-        return joinNumbers(tokens);
-    }
-    else if (type == "str")
-    {
-        return joinStrings(tokens);
-    }
-    else
-    {
-        return tokens[0];
     }
 }
 
