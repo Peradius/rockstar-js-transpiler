@@ -240,13 +240,11 @@ function getCode(node)
             if(right !== undefined) result += getCode(right);
             result = result.replaceAll(" {", "");
             result += ") {"
-            console.log(node)
             return result;
         }
         case "cond_else": {
             let result = "else {";
             if(right !== undefined) result += getCode(right);
-            console.log(node)
             return result;
         }
         case "+":

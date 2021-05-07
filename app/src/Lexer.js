@@ -207,8 +207,6 @@ function analyzeIntoTokens(word_line)
     while (pointer < word_line.length)
     {
         var token = analyzeWord(word_line[pointer], force_next_types.length == 0)
-        console.log(pointer + " : " + token)
-        console.log(force_next_types)
 
         if (force_next_types.length > 0)
         {
