@@ -49,7 +49,7 @@ const KEYWORDS = {
     "down" : "req_down",
 
     "while" : "loop",
-    "until" : "loop",
+    "until" : "loop_opp",
 
     "if" : "cond_if",
     "else" : "cond_else",
@@ -74,7 +74,7 @@ const KEYWORDS = {
 
     "takes" : "function_init", // Creates a function
     "taking" : "function_exec", // Calls a function
-    "and" : "function_arg_sep", // Separator between various function arguments
+    "and" : "and",
 
     // Special keywords (see below)
     "special_give_back" : "return",
@@ -84,12 +84,13 @@ const KEYWORDS = {
     "special_greater_than" : ">",
     "special_lesser_than" : "<",
     "special_greater_equal_than" : ">=",
-    "special_lesser_equal_than" : "<="
+    "special_lesser_equal_than" : "<=",
+    "special_not_equal" : "!="
 };
 
 const SPECIAL_KEYWORDS = {
     "Give back" : "special_give_back",
-    "Break it down": "special_break_it_down",
+    "Break it down" : "special_break_it_down",
     "Take it to the top" : "special_take_it_to_the_top",
 
     "is higher than" : "special_greater_than",
@@ -110,15 +111,25 @@ const SPECIAL_KEYWORDS = {
     "is as low as": "special_lesser_equal_than",
     "is as little as": "special_lesser_equal_than",
     "is as small as": "special_lesser_equal_than",
-    "is as weak as": "special_lesser_equal_than"
+    "is as weak as": "special_lesser_equal_than",
+    "is not " : "special_not_equal",
+    "are not " : "special_not_equal",
+    "aint" : "special_not_equal",
+    "isnt" : "special_not_equal",
+    "arent" : "special_not_equal"
 }
 
+const COMPARISON_ENABLERS = ["loop", "loop_op", "cond_if", "cond_else", "function_exec"]
+
 const NON_OPERATORS = ["id", "str", "num", "bool_true", "bool_false", "null", "undefined", "empty_line"]
+
+const INSIDE_FUNCTION = ["id", "str", "num", "and"]
 
 var word_lines = [];
 var token_lines = [];
 var declared_variables = [];
 var last_used_variable;
+var contextDepth = 0;
 
 class token{
     type;
@@ -160,7 +171,7 @@ function splitIntoWords(line)
     // but should be treated as a single word
 
     Object.keys(SPECIAL_KEYWORDS).forEach(key => {
-        line = line.replace(/[,/#$%^&*;:{}=\-`~()]/g, "")
+        line = line.replace(/[,/#$%^&*;:'{}=\-`~()]/g, "")
         line = line.replaceAll(`${key}`, SPECIAL_KEYWORDS[key])
     })
 
@@ -206,7 +217,7 @@ function analyzeIntoTokens(word_line)
 
     while (pointer < word_line.length)
     {
-        var token = analyzeWord(word_line[pointer], force_next_types.length == 0)
+        var token = analyzeWord(word_line[pointer], force_next_types.length === 0)
 
         if (force_next_types.length > 0)
         {
@@ -215,7 +226,8 @@ function analyzeIntoTokens(word_line)
             // Expression is amazing    => var Expression = 7
             // Expression is ok         => var Expression = true  //(not var Expression = 2)
             let type = token.type;
-            if(type === "null") token.type = force_next_types[1];
+            if (type === "and") force_next_types = [];
+            else if(type === "null") token.type = force_next_types[1];
             else if(type === "undefined") token.type = force_next_types[2];
             else if(type === "bool_true") token.type = force_next_types[3];
             else if(type === "bool_false") token.type = force_next_types[4];
@@ -243,7 +255,10 @@ function analyzeIntoTokens(word_line)
     let tokens = [];
     let current_type = "";
     let enablers = [];
-    var tokensToJoin = [];
+    let lastUsedEnabler = "";
+    let tokensToJoin = [];
+    let insideFunction = false;
+    let insideCondition = false;
 
     while (pointer < temp_tokens.length)
     {
@@ -256,7 +271,19 @@ function analyzeIntoTokens(word_line)
 
         if (current_type.includes("req_"))
         {
-            current_type = getOperatorFromEnReqPair(enablers.pop(), current_type);
+            let enabler = "";
+
+            if (enablers.length <= 0)
+            {
+                enabler = lastUsedEnabler;
+            }
+            else
+            {
+                enabler = enablers.pop();
+                lastUsedEnabler = enabler;
+            }
+
+            current_type = getOperatorFromEnReqPair(enabler, current_type);
             temp_tokens[pointer].type = current_type;
         }
 
@@ -265,10 +292,57 @@ function analyzeIntoTokens(word_line)
         if (pointer + 1 >= temp_tokens.length
             || temp_tokens[pointer + 1].type !== temp_tokens[pointer].type || isOperator(current_type))
         {
-            let joinedToken = joinTokens(tokensToJoin, current_type);
+            if (current_type === "function_init" || current_type === "function_exec")
+            {
+                insideFunction = true;
+                contextDepth++;
+
+                if (tokens.length > 0)
+                {
+                    let token = tokens[tokens.length - 1];
+                    declared_variables = declared_variables.filter(function(value){
+                        return value !== token.value;
+                    });
+                }
+            }
+            else if (insideFunction === true && !INSIDE_FUNCTION.includes(current_type))
+            {
+                insideFunction = false;
+            }
+
+            if (COMPARISON_ENABLERS.includes(current_type))
+            {
+                insideCondition = true;
+            }
+
+            if (current_type === "and")
+            {
+
+                if (insideFunction)
+                {
+                    current_type = "function_arg_sep"
+                }
+                else
+                {
+                    current_type = "&&"
+                }
+            }
+
+            let joinedToken = joinTokens(tokensToJoin, current_type, contextDepth === 0, insideCondition);
+
+            if (current_type === "empty_line")
+            {
+                contextDepth--;
+
+                if (contextDepth < 0)
+                {
+                    contextDepth = 0;
+                }
+            }
 
             tokens.push(joinedToken);
             tokensToJoin = [];
+
         }
 
         pointer++
@@ -286,42 +360,44 @@ function isDeclaredVariable(v)
     return declared_variables.includes(v);
 }
 
-function joinTokens(tokens, type)
+function joinTokens(tokens, type, shouldDeclare, doubleEqual)
 {
-    if (type == "eq" || type == "seq")
+
+    if (type === "eq" || type === "seq")
     {
-        return new token(tokens[0].value, "=")
+        let eq = doubleEqual ? "==" : "="
+        return new token(tokens[0].value, eq)
     }
 
-    if (type == "last_id")
+    if (type === "last_id")
     {
         return new token(last_used_variable, "id")
     }
-    if (type == "id")
+    if (type === "id")
     {
-        return joinIds(tokens);
+        return joinIds(tokens, shouldDeclare);
     }
-    else if (type == "num")
+    else if (type === "num")
     {
         return joinNumbers(tokens);
     }
-    else if (type == "str")
+    else if (type === "str")
     {
         return joinStrings(tokens);
     }
     else
     {
-        return tokens[0];
+        return new token(tokens[0], type);
     }
 
-    function joinIds(tokens)
+    function joinIds(tokens, shouldDeclare)
     {
         var idName = "";
 
-        tokens.forEach(t => idName += ("_" + t.value));
+        tokens.forEach(t => idName += ("_" + t.value.toLowerCase()));
         idName = idName.substr(1);
 
-        if (!declared_variables.includes(idName))
+        if (!declared_variables.includes(idName) && shouldDeclare)
         {
             declared_variables.push(idName);
         }
@@ -419,7 +495,9 @@ function Lexer(unparsed_code)
     var unparsed_lines = unparsed_code.split("\n")
     unparsed_lines.forEach(l => word_lines.push(splitIntoWords(l)));
     word_lines.forEach(analyzeIntoTokens);
-    
+
+    console.log(token_lines);
+
     return new lexer_analysis_result(token_lines, declared_variables);
 }
 

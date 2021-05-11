@@ -2,8 +2,8 @@ import Lexer from "./Lexer.js";
 
 const OPERATORS = {
     "function_arg_sep": 1,
-    "return" : 1,
-    "print" : 1,
+    "return" : 100,
+    "print" : 100,
     "break" : 1,
     "continue" : 1,
     "undefined" : 1,
@@ -24,12 +24,15 @@ const OPERATORS = {
     "*": 5,
     "/": 5,
     "=" : 10,
+    "==": 40,
+    "!=" : 40,
+    "&&" : 39,
     "reverse_=": 20,
-    "loop": 30,
+    "loop": 50,
     "function_init": 30,
     "function_exec": 30,
-    "cond_if" : 35,
-    "cond_else" : 35
+    "cond_if" : 45,
+    "cond_else" : 45
 }
 
 const BLOCK_INITALIZERS = ["loop", "function_init", "function_exec", "cond_if", "cond_else"];
@@ -99,16 +102,35 @@ function parse(unparsed_code)
         code_lines.push('}')
     }
 
+    for (let i = 0; i < code_lines.length; i++)
+    {
+        let line = code_lines[i];
+        let first_word = line.split(' ')[0];
+
+        if (declared_variables.includes(first_word))
+        {
+            code_lines[i] = "let " + line;
+            declared_variables = declared_variables.filter(function(value){
+                return value !== first_word;
+            });
+        }
+    }
+
     let code = getDeclarationsForVariables();
     code_lines.forEach(cl => code += cl + '\n');
 
-    // eval(code);
+    //eval(code);
 
     return code;
 }
 
 function getDeclarationsForVariables()
 {
+    if (declared_variables.length === 0)
+    {
+        return "";
+    }
+
     let dec = "";
     declared_variables.forEach(v => dec += "var " + v + ";\n");
     dec += "\n";
@@ -201,29 +223,29 @@ function getCode(node)
             return "while(" + getCode(right) + ") {"
         }
         case "break": {
-            return "break;"
+            return "break"
         }
         case "continue": {
-            return "continue;"
+            return "continue"
         }
         case "undefined": {
-            return "undefined;"
+            return "undefined"
         }
         case "null": {
-            return "null;"
+            return "null"
         }
         case "bool_true": {
-            return "true;"
+            return "true"
         }
         case "bool_false": {
-            return "false;"
+            return "false"
         }
         case "function_init": {
             return "function " + getCode(left) + "(" + getCode(right) + ") {";
         }
         case "function_arg_sep": {
             let result = "";
-            if (left !== undefined) result += getCode(left) + ","
+            if (left !== undefined) result += getCode(left) + ", "
             if (right !== undefined) result += getCode(right)
 
             return result
@@ -231,7 +253,7 @@ function getCode(node)
         case "function_exec": {
             let result = "";
             if (left !== undefined) result += "this." + getCode(left) + "("
-            if (right !== undefined) result += getCode(right) + ") {"
+            if (right !== undefined) result += getCode(right) + ")"
             result + ")"
             return result;
         }
@@ -255,6 +277,9 @@ function getCode(node)
         case ">":
         case "<":
         case ">=":
+        case "!=":
+        case "==":
+        case "&&":
         case "<=": {
             return getCode(left) + " " + type + " " + getCode(right);
         }
