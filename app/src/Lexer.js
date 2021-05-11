@@ -265,7 +265,9 @@ function analyzeIntoTokens(word_line)
         if (pointer + 1 >= temp_tokens.length
             || temp_tokens[pointer + 1].type !== temp_tokens[pointer].type || isOperator(current_type))
         {
-            tokens.push(joinTokens(tokensToJoin, current_type));
+            let joinedToken = joinTokens(tokensToJoin, current_type);
+
+            tokens.push(joinedToken);
             tokensToJoin = [];
         }
 
@@ -277,6 +279,11 @@ function analyzeIntoTokens(word_line)
     });
 
     token_lines.push(tokens);
+}
+
+function isDeclaredVariable(v)
+{
+    return declared_variables.includes(v);
 }
 
 function joinTokens(tokens, type)
@@ -331,6 +338,11 @@ function joinTokens(tokens, type)
         tokens.forEach(t => string += " " + t.value);
         string  = "\"" + string.trim() + "\"";
 
+        if (isDeclaredVariable(string))
+        {
+            return new token(string, "id")
+        }
+
         return new token(string, "str");
     }
 
@@ -339,6 +351,11 @@ function joinTokens(tokens, type)
         var string = "";
         tokens.forEach(t => string += t.value + " ");
         string = string.trim();
+
+        if (isDeclaredVariable(string))
+        {
+            return new token(string, "id")
+        }
 
         var substrings = string.split(".");
         var integer_string = substrings[0];
