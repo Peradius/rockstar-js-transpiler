@@ -28,7 +28,7 @@ const OPERATORS = {
     "!=" : 40,
     "&&" : 39,
     "reverse_=": 20,
-    "loop": 50,
+    "loop": 45,
     "function_init": 30,
     "function_exec": 30,
     "cond_if" : 45,
